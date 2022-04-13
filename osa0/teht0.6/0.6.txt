@@ -1,0 +1,19 @@
+title Fullstack 0.6: Uusi muistiinpano
+
+note over selain:
+selain lähettää palvelimelle pyynnön,
+joka sisältää JSON-muotoisen muistiinpanon
+end note
+
+selain->palvelin: HTTP POST https://studies.cs.helsinki.fi/exampleapp/new_note_spa
+
+note over palvelin:
+palvelin parsii datan
+end note
+
+palvelin-->selain: statuskoodi 201
+
+note over selain:
+selain suorittaa tapahtumankäsittelijän,
+joka renderöi muistiinpanot näytölle
+end note
