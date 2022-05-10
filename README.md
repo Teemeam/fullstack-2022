@@ -1,5 +1,7 @@
 # **Full Stack open 2022**
 
-https://fullstackopen.com/
-
 Palautusrepositorio.
+
+Kurssin sivut: https://fullstackopen.com/
+
+Palautussovellus: https://studies.cs.helsinki.fi/stats/courses/fullstackopen
