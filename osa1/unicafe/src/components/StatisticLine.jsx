@@ -2,5 +2,10 @@ import React from 'react';
 
 export const StatisticLine = (props) => {
   const { text, value } = props;
-  return <p>{ `${ text } ${ value }` }</p>;
+  return (
+    <tr>
+      <td>{ text }</td>
+      <td>{ value }</td>
+    </tr>
+  );
 };
