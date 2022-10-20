@@ -1,4 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import personService from './services/persons'
+
+const Notification = ({ message, errorColor }) => {
+  const errorStyle = {
+    color: errorColor ? errorColor : 'green',
+    background: 'lightgrey',
+    fontSize: '20px',
+    borderStyle: 'solid',
+    borderRadius: '5px',
+    padding: '10px',
+    marginBottom: '10px',
+  }
+
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div style={ errorStyle }>
+      {message}
+    </div>
+  )
+}
 
 const Filter = ({ searchWord, handleFilter }) =>
   <div>
@@ -33,16 +56,21 @@ const PersonForm = ({ addPerson, newName, handlePersonChange, newNumber, handleN
 const Persons = ({ numbers }) => <div>{ numbers }</div>
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { id: 1, name: 'Arto Hellas', number: '040-123456' },
-    { id: 2, name: 'Ada Lovelace', number: '39-44-5323523' },
-    { id: 3, name: 'Dan Abramov', number: '12-43-234345' },
-    { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ])
+  const [persons, setPersons] = useState([]);
   const [searchWord, setSearchWord] = useState('');
   const [filteredPersons, setFilteredPersons] = useState(null);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
+  const [errorColor, setErrorColor] = useState('green');
+  const [errorMessage, setErrorMessage] = useState(null);
+
+  useEffect(() => {
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
+      })
+  }, [])
 
   const handleFilter = (event) => {
     setSearchWord(event.target.value);
@@ -63,11 +91,38 @@ const App = () => {
         name: newName,
         number: newNumber
       };
-      setPersons(persons.concat(personObj));
-      setNewName('');
-      setNewNumber('');
+      personService
+        .create(personObj)
+        .then(newPerson => {
+          setPersons(persons.concat(newPerson));
+          setNewName('');
+          setNewNumber('');
+          setErrorColor('green');
+          setErrorMessage(`Added ${ newPerson.name }`);
+          setTimeout(() => { setErrorMessage(null) }, 3000);
+        })
     } else {
-      alert(`${ newName } is already added to phonebook`)
+      if (window.confirm(`${ newName } is already added to phonebook, replace the old number with a new one?`)) {
+        const existingPerson = persons.filter(e => e.name === newName)[0];
+        console.log(existingPerson);
+        const personObj = { ...existingPerson, number: newNumber };
+        personService
+          .update(existingPerson.id, personObj)
+          .then(updatedPerson => {
+            setPersons(persons.map(person => person.id !== updatedPerson.id ? person : updatedPerson));
+            setNewName('');
+            setNewNumber('');
+            setErrorColor('green');
+            setErrorMessage(`Changed the phone number of ${ updatedPerson.name }`);
+            setTimeout(() => { setErrorMessage(null) }, 3000);
+          })
+          .catch(error => {
+            console.log(error);
+            setErrorColor('red');
+            setErrorMessage(`Information of ${ existingPerson.name } as already been removed from server`)
+            setTimeout(() => { setErrorMessage(null) }, 3000);
+          })
+      }
     }
   }
 
@@ -79,20 +134,40 @@ const App = () => {
     setNewNumber(event.target.value);
   }
 
+  const removePerson = (person) => {
+    if (window.confirm(`Delete ${ person.name }?`)) {
+      personService
+        .remove(person.id)
+        .then(() => {
+          setPersons(persons.filter(item => item.id !== person.id));
+          setErrorColor('green');
+          setErrorMessage(`Deleted ${ person.name }`);
+          setTimeout(() => { setErrorMessage(null) }, 3000);
+        })
+    }
+  }
+
   let numbers = null;
   if (filteredPersons) {
     numbers = filteredPersons.map((person) => (
-      <p key={ person.id }>{ person.name } { person.number }</p>
+      <div key={ person.id }>
+        <p>{ person.name } { person.number }</p>
+        <button onClick={ () => removePerson(person) }>delete</button>
+      </div>
     ));
   } else {
     numbers = persons.map((person) => (
-      <p key={ person.id }>{ person.name } { person.number }</p>
+      <div key={ person.id }>
+        <p>{ person.name } { person.number }</p>
+        <button onClick={ () => removePerson(person) }>delete</button>
+      </div>
     ));
   }
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={ errorMessage } errorColor={ errorColor }/>
       <Filter
         searchWord={ searchWord }
         handleFilter={ handleFilter }
